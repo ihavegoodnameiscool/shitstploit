@@ -147,6 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BytecodeCompiler.hpp" />
+    <ClInclude Include="ClosureEnv.hpp" />
     <ClInclude Include="DataModelFetcher.hpp" />
     <ClInclude Include="DebugLibraryEnv.hpp" />
     <ClInclude Include="Dependencies\base64\base64.hpp" />
@@ -286,6 +287,11 @@
     <ClInclude Include="Dependencies\Luau\VM\src\ltm.h" />
     <ClInclude Include="Dependencies\Luau\VM\src\ludata.h" />
     <ClInclude Include="Dependencies\Luau\VM\src\lvm.h" />
+    <ClInclude Include="Dependencies\lz4\lz4.h" />
+    <ClInclude Include="Dependencies\lz4\lz4file.h" />
+    <ClInclude Include="Dependencies\lz4\lz4frame.h" />
+    <ClInclude Include="Dependencies\lz4\lz4frame_static.h" />
+    <ClInclude Include="Dependencies\lz4\lz4hc.h" />
     <ClInclude Include="Dependencies\nlohmann\nlohmann.hpp" />
     <ClInclude Include="Dependencies\zstd\common\allocations.h" />
     <ClInclude Include="Dependencies\zstd\common\bits.h" />
@@ -346,6 +352,7 @@
     <ClInclude Include="ScriptsEnv.hpp" />
     <ClInclude Include="Update\Encryptions.hpp" />
     <ClInclude Include="Update\Shuffles.hpp" />
+    <ClInclude Include="WebSocketEnv.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Dependencies\base64\ntdll.cpp" />
@@ -450,6 +457,10 @@
     <ClCompile Include="Dependencies\Luau\VM\src\lvmexecute.cpp" />
     <ClCompile Include="Dependencies\Luau\VM\src\lvmload.cpp" />
     <ClCompile Include="Dependencies\Luau\VM\src\lvmutils.cpp" />
+    <ClCompile Include="Dependencies\lz4\lz4.c" />
+    <ClCompile Include="Dependencies\lz4\lz4file.c" />
+    <ClCompile Include="Dependencies\lz4\lz4frame.c" />
+    <ClCompile Include="Dependencies\lz4\lz4hc.c" />
     <ClCompile Include="Dependencies\zstd\common\debug.c" />
     <ClCompile Include="Dependencies\zstd\common\entropy_common.c" />
     <ClCompile Include="Dependencies\zstd\common\error_private.c" />

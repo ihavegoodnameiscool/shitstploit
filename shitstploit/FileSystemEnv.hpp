@@ -8,6 +8,7 @@
 #include <windows.h>
 #define ARG_CHECK(L, MIN, MAX, T) if (lua_gettop(L) < MIN) { T return 0; } else if (lua_gettop(L) > MAX) { lua_settop(L, MAX); } T
 #include <shlobj.h>  // Required for SHGetFolderPath
+#include <VM/src/ldebug.h>
 std::vector<std::string> disallowed_extensions = {
             ".exe", ".bat", ".com", ".csh", ".msi", ".vb", ".vbs", ".vbe", ".ws", ".wsf", ".wsh", ".ps1"
 };
@@ -303,39 +304,124 @@ auto lua_appendfile(lua_State* L) -> int {
 
     return 0;
 }
-auto lua_loadfile(lua_State* L) -> int {
-    ARG_CHECK(L, 1, 1, luaL_checktype(L, 1, LUA_TSTRING);)
-        std::string path = lua_tostring(L, 1);
 
+std::string getExePath() {
+    TCHAR buffer[MAX_PATH] = { 0 };
+    GetModuleFileName(NULL, buffer, MAX_PATH);
 
+    std::wstring exePath(buffer);
+    std::wstring::size_type pos = exePath.find_last_of(L"\\/"); // Find last backslash
+    exePath = exePath.substr(0, pos); // Extract path before the executable
 
-    if (path.find("..") != std::string::npos) {
-        luaL_error(L, "attempt to escape directory");
-        return 0;
+    // Convert to string
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, exePath.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    std::string exePathString(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, exePath.c_str(), -1, &exePathString[0], size_needed, nullptr, nullptr);
+
+    // Remove the null terminator added by WideCharToMultiByte
+    exePathString.resize(size_needed - 1);
+
+    return exePathString;
+}
+
+int getcustomasset(lua_State* L) {
+    // Check the Lua argument is a string
+    ARG_CHECK(L, 1, 1, luaL_checktype(L, 1, LUA_TSTRING););
+
+    // Get the current directory
+    wchar_t buffer[MAX_PATH];
+    DWORD length = GetCurrentDirectory(MAX_PATH, buffer);
+    if (length == 0) {
+        RBX::Print(1, "Failed to get current directory.");
+        return 1;
     }
+    std::string exePath = std::filesystem::path(buffer).string();
+
+    // Append the content directory to the current directory
+    std::string contentDir = exePath + "\\content\\BA1C3BA115S";
+
+    RBX::Print(1, "Exe Path: %s", exePath.c_str());
+    RBX::Print(1, "Content Directory: %s", contentDir.c_str());
+
+    // Check if the directory already exists, and create it if not
+    if (!std::filesystem::exists(contentDir)) {
+        std::filesystem::create_directory(contentDir);
+        RBX::Print(1, "Directory created: %s", contentDir.c_str());
+    }
+    else {
+        RBX::Print(1, "Directory already exists: %s", contentDir.c_str());
+    }
+
+    // Prepare the source path from AppData and Lua input
+    std::string workspacePath = getAppDataPath() + "\\" + lua_tostring(L, 1);
+    RBX::Print(1, "Workspace path: %s", workspacePath.c_str());
+
+    // Check if the source file exists
+    if (!std::filesystem::exists(workspacePath)) {
+        RBX::Print(1, "Source file does not exist: %s", workspacePath.c_str());
+        return 1; // Return early if the source file doesn't exist
+    }
+
+    // Define the target path for copying the file
+    std::string customAssetFile = contentDir + "\\" + std::filesystem::path(workspacePath).filename().string();
+    RBX::Print(1, "Copying to: %s", customAssetFile.c_str());
+
+    // Copy the file, updating it if it already exists
+    std::filesystem::copy_file(workspacePath, customAssetFile, std::filesystem::copy_options::update_existing);
+
+    // Push the asset URL to Lua
+    lua_pushstring(L, std::string("rbxasset://BA1C3BA115S/" + std::filesystem::path(customAssetFile).filename().string()).c_str());
+
+    return 1; // Return success
+}
+int loadstring(lua_State* L, const std::string& code) {
+
+    static auto Encoder = CBytecodeEncoder();
+    auto Bytecode = Luau::compile(code, { 2, 1, 2 }, { true, true }, &Encoder);
+
+    if (luau_load(L, "goodexec", Bytecode.c_str(), Bytecode.size(), 0) != LUA_OK) {
+        const char* err = lua_tostring(L, -1);
+        RBX::Print(1, "[Execution::lua_loadstring] luau_load failed with error \'%s\'", err);
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushlstring(L, err, strlen(err));
+        return 2;
+    }
+
+    return 1;
+}
+int loadfile(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TSTRING);
+    std::string path = lua_tostring(L, 1);
+
+
+
+    if (path.find("..") != std::string::npos)
+        luaG_runerror(L, "attempt to escape directory");
 
     path = (getAppDataPath() + "\\" + path);
 
-    if (!std::filesystem::exists(path.c_str())) {
-        luaL_error(L, "file does not exist");
-        return 0;
-    }
+    if (!std::filesystem::exists(path.c_str()))
+        luaG_runerror(L, "file does not exist");
 
     std::string output = read_file(path);
 
-    
-    return true;
+    return loadstring(L, output);
 }
+
+
 static const luaL_Reg env_funcs[] = {
+    {"getcustomasset", getcustomasset},
     {"readfile", lua_readfile},
+   {"loadfile", loadfile},
     {"writefile", lua_writefile},
     {"makefolder", lua_makefolder},
     {"isfolder", lua_isfolder},
     {"isfile", lua_isfile},
     {"delfolder", lua_delfolder},
     {"listfiles", lua_listfiles},
-    {"loadfile", lua_loadfile},
     {"appendfile", lua_appendfile},
+    {"delfile", lua_delfile},
     {NULL, NULL}  // Sentinel to mark the end of the array
 };
 // Function to register C++ functions in Luau

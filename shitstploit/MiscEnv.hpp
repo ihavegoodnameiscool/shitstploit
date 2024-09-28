@@ -1,7 +1,9 @@
 #include <lualib.h>
 #include <lua.h>
 #include <Offsets.hpp>
+#include "lz4/lz4.h"
 
+#define dereference_pointer(ptr) (*(int*)ptr)
 #define ARG_CHECK(L, MIN, MAX, T) if (lua_gettop(L) < MIN) { T return 0; } else if (lua_gettop(L) > MAX) { lua_settop(L, MAX); } T
 double cap = 60;
 auto setfpscap(lua_State* L) -> int {
@@ -12,7 +14,10 @@ auto setfpscap(lua_State* L) -> int {
 
     return 0;
 }
-
+auto checkinstance(lua_State* L, int idx) -> bool {
+    const char* t = luaL_typename(L, idx);
+    return (strcmp(t, "Instance") == 0);
+}
 auto queue_on_teleport(lua_State* L) -> int {
     ARG_CHECK(L, 1, 1, luaL_checktype(L, 1, LUA_TSTRING););
     std::string code = lua_tostring(L, 1);
@@ -81,17 +86,112 @@ auto getfpscap(lua_State* L) -> int {
     lua_pushnumber(L, cap);
     return 1;
 }
+const wchar_t* to_wchar(const char* szConvert) {
+    auto charLen = strlen(szConvert) + 1;
+    auto* wText = new wchar_t[charLen];
+    size_t outSize = 0;
+    mbstowcs_s(&outSize, wText, charLen, szConvert, charLen - 1);
+    return wText;
+}
 
 auto lua_loadstring(lua_State* L) -> int {
-    ARG_CHECK(L, 1, 2, luaL_checktype(L, 1, LUA_TSTRING););
-    const char* code = lua_tostring(L, 1);
-    const char* chunk_name = luaL_optstring(L, 2, "ihavegoodexecutor");
-    StateTools::Execute(code, (uintptr_t)L);
-    return 1;
+
+
+    const char* str = luaL_checkstring(L, 1);
+
+    if (std::string(str).empty() || lua_type(L, 1) != LUA_TSTRING) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    return loadstring(L, str);
+
+
 }
 
 
+int lz4compress(lua_State* L) {
+    ARG_CHECK(L, 1, 1, luaL_checktype(L, 1, LUA_TSTRING););
+    const char* data = lua_tostring(L, 1);
+    int nMaxCompressedSize = LZ4_compressBound(strlen(data));
+    char* out_buffer = new char[nMaxCompressedSize];
+
+    LZ4_compress(data, out_buffer, strlen(data));
+    lua_pushlstring(L, out_buffer, nMaxCompressedSize);
+    return 1;
+}
+int lz4decompress(lua_State* L) {
+    ARG_CHECK(L, 2, 2, luaL_checktype(L, 1, LUA_TSTRING););
+    luaL_checktype(L, 2, LUA_TNUMBER);
+    const char* data = lua_tostring(L, 1);
+    int data_size = lua_tointeger(L, 2);
+
+    char* pszUnCompressedFile = new char[data_size];
+
+    LZ4_uncompress(data, pszUnCompressedFile, data_size);
+    lua_pushlstring(L, pszUnCompressedFile, data_size);
+    return 1;
+}
+auto getpropvalue(lua_State* L) -> int {
+    ARG_CHECK(L, 2, 2, luaL_checktype(L, 1, LUA_TUSERDATA););
+    luaL_checktype(L, 2, LUA_TSTRING);
+
+    if (!checkinstance(L, 1))
+    {
+        luaL_argerror(L, 1, "userdata<instance> expected");
+        return 0;
+    }
+
+    lua_getfield(L, 1, lua_tolstring(L, 2, NULL));
+    const char* data = lua_tolstring(L, -1, NULL); lua_pop(L, 2);
+
+
+    lua_pushstring(L, data);
+    return 1;
+}
+
+auto setpropvalue(lua_State* L) -> int {
+    ARG_CHECK(L, 3, 3, luaL_checktype(L, 1, LUA_TUSERDATA););
+    luaL_checktype(L, 2, LUA_TSTRING);
+    luaL_checkany(L, 3);
+
+    if (!checkinstance(L, 1))
+    {
+        luaL_argerror(L, 1, "userdata<instance> expected");
+        return 0;
+    }
+
+    lua_setfield(L, 1, lua_tolstring(L, 2, NULL));
+    return 0;
+}
+auto compare_instances(lua_State* L) -> int {
+    ARG_CHECK(L, 2, 2, luaL_checktype(L, 1, LUA_TUSERDATA););
+    luaL_checktype(L, 2, LUA_TUSERDATA);
+
+    if (!checkinstance(L, 1))
+    {
+        luaL_argerror(L, 1, "userdata<instance> expected");
+        return 0;
+    }
+
+    if (!checkinstance(L, 2))
+    {
+        luaL_argerror(L, 1, "userdata<instance> expected");
+        return 0;
+    }
+
+    int instance_1 = dereference_pointer(lua_touserdata(L, 1));
+    int instance_2 = dereference_pointer(lua_touserdata(L, 2));
+
+    lua_pushboolean(L, (instance_1 == instance_2));
+    return 1;
+}
 static const luaL_Reg env_funcs34[] = {
+    {"getpropvalue", getpropvalue},
+    {"checkinst", compare_instances},
+     {"compareinstances", compare_instances},
+    {"getpropvalue", setpropvalue},
+    {"loadstring2", lua_loadstring},
     {"setclipboard", lua_setclipboard},
     {"toclipboard", lua_setclipboard},
 
@@ -101,13 +201,15 @@ static const luaL_Reg env_funcs34[] = {
     {"identifyexecutor", lua_identifyexecutor},
     {"getexecutorname", lua_identifyexecutor},
 
+    {"lz4compress", lz4compress},
+    {"lz4decompress", lz4decompress},
+
     {"setfpscap", setfpscap},
     {"getfpscap", getfpscap},
 
     {"queue_on_teleport", queue_on_teleport},
     {"queueonteleport", queue_on_teleport},
 
-    {"loadstring", lua_loadstring},
 
     {NULL, NULL}
 };

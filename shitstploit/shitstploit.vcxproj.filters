@@ -615,6 +615,27 @@
     <ClInclude Include="Dependencies\ixwebsocket\include\ixwebsocket\IXWebSocketVersion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ClosureEnv.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\lz4\lz4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\lz4\lz4file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\lz4\lz4frame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\lz4\lz4frame_static.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\lz4\lz4hc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebSocketEnv.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -1035,6 +1056,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Dependencies\ixwebsocket\include\ixwebsocket\IXWebSocketTransport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\lz4\lz4.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\lz4\lz4file.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\lz4\lz4frame.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\lz4\lz4hc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -317,9 +317,6 @@ auto debug_setupvalue(lua_State* L) -> int {
 		luaL_argerror(L, 1, "upvalue index starts at 1");
 		return 0;
 	}
-	if (index < 1) {
-		luaL_argerror(L, 2, "index must not be negative");
-	}
 	if (index > closure->nupvalues) {
 		luaL_argerror(L, 1, "upvalue index is out of range");
 		return 0;
@@ -439,9 +436,6 @@ auto debug_getstack(lua_State* L) -> int {
 		luaL_argerror(L, 1, "level points to a cclosure, lclosure expected");
 	}
 
-	if (index < 0) {
-		luaL_argerror(L, 2, "index must not be negative");
-	}
 
 	if (index == -1) {
 		lua_newtable(L);
@@ -498,10 +492,6 @@ auto debug_setstack(lua_State* L) -> int {
 	// Get the type of the existing object at the target index
 	const auto currentType = lua_type(L, targetIndex);
 
-	// Compare types
-	if (currentType != targetType) {
-		luaL_argerror(L, 3, "source type does not match target type");
-	}
 
 	// If types match, set the object in the target stack location
 	setobj2s(L, &frame->base[targetIndex], luaA_toobject(L, 3));
@@ -572,12 +562,7 @@ auto getregistry(lua_State* L) -> int {
 
 
 
-
-/* registering */
-static const luaL_Reg debugenv_funcs[] = { // {"NAME", FUNC},
-
-	//{"get_actor_state", get_actor_state},
-
+static const luaL_Reg debugenv_funcs[] = { 
 
 	{"getconstants", debug_getconstants},
 	{"getconstant", debug_getconstant},

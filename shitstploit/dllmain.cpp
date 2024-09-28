@@ -10,13 +10,18 @@
 #include "MiscEnv.hpp"
 #include "HttpEnv.hpp"
 #include "ScriptsEnv.hpp"
+#include "ClosureEnv.hpp";
+#include "WebSocketEnv.hpp"
 
+#include <codecvt>
 //#include "CryptEnv.hpp"
 
 
 extern "C" __declspec(dllexport) LRESULT CALLBACK NextHook(int code, WPARAM wParam, LPARAM lParam) {
     return CallNextHookEx(NULL, code, wParam, lParam);
 }
+
+
 
 void StartCommunication(uintptr_t state)
 {
@@ -53,6 +58,10 @@ void StartCommunication(uintptr_t state)
 
 void MainThread(HMODULE DllModule)
 {
+
+  
+
+    RBX::Print(1, getExePath().c_str());
     uintptr_t luaState = StateTools::getLuaState();
     const auto MainThread = (lua_State*)luaState;
     register_misc(MainThread);
@@ -61,6 +70,8 @@ void MainThread(HMODULE DllModule)
     register_input(MainThread);
     register_http(MainThread);
     register_script(MainThread);
+    register_closure(MainThread);
+    register_websocket(MainThread);
     std::string url = "https://pastebin.com/raw/gVxWSRWJ";
 
     // Perform a GET request
@@ -79,6 +90,7 @@ bool __stdcall DllMain(HMODULE DllModule, uintptr_t ReasonForCall, void*)
 {
     if (ReasonForCall == DLL_PROCESS_ATTACH)
     {
+     //   MessageBoxA(NULL, "Injector working 24/09/2024", "Haha skids", MB_OK);
         std::thread(MainThread, DllModule).detach();
     }
 

@@ -246,4 +246,16 @@ void register_http(lua_State* L)
     luaL_register(L, NULL, env_funcs2);
 
     lua_pop(L, 1);
+
+    lua_getglobal(L, "http");  // Push the "http" table to the stack
+
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);  // Pop the nil value
+        lua_newtable(L);  // Create a new table for "http"
+        lua_pushvalue(L, -1);  // Duplicate the "http" table
+        lua_setglobal(L, "http");  // Set the global "http" = table
+    }
+
+    // Register the functions in the "http" table
+    luaL_register(L, NULL, env_funcs2);  // Lua 5.2+ function to register them in "http"
 }

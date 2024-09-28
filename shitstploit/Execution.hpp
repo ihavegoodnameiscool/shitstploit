@@ -72,10 +72,11 @@ namespace StateTools
         RBX::Print(1, ("Script Context Address: " + std::to_string(view_address)).c_str());
         const auto EncryptedState = *(uintptr_t*)(*(uintptr_t*)(*(uintptr_t*)(dataModel + 0x50) + 0x0) + 0x3D0) + 0x1C8;
         RBX::Print(1, ("Encrypted Lua State: " + std::to_string(EncryptedState)).c_str());
-        auto LuaState = (uintptr_t)lua_newthread((lua_State*)(EncryptedState + *(int*)EncryptedState));
+        auto LuaState1 = (lua_State*)(EncryptedState + *(int*)EncryptedState);
+        auto LuaState = (uintptr_t)lua_newthread(LuaState1);
         RBX::Print(1, ("Decrypted Lua State: " + std::to_string(LuaState)).c_str());
         RBX::Print(1, "FentanylSploit finished initalising");
-        state = LuaState;
+        state = (uintptr_t)LuaState1;
         return LuaState;
     }
     static uintptr_t MaxCapabilities = 0xEFFFFFFFFFFFFFFF;
@@ -96,7 +97,6 @@ namespace StateTools
             *(__int64*)(ExtraSpace + Update::Userdata::Identity) = 8;
             *(__int64*)(ExtraSpace + Update::Userdata::Capabilities) = MaxCapabilities;
    
-       
             lua_getglobal(ExecutionThread, "task");
             lua_getfield(ExecutionThread, -1, "defer");
 
